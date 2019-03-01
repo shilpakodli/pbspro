@@ -56,6 +56,7 @@ from nose.plugins.skip import SkipTest
 from nose.suite import ContextSuite
 from ptl.utils.pbs_testsuite import PBSTestSuite
 from ptl.utils.pbs_testsuite import TIMEOUT_KEY
+from ptl.utils.pbs_testsuite import MINIMUM_TESTCASE_TIMEOUT
 from ptl.utils.pbs_dshutils import DshUtils
 from ptl.lib.pbs_testlib import PBSInitServices
 from ptl.utils.pbs_covutils import LcovUtils
@@ -195,6 +196,9 @@ class _PtlTestResult(unittest.TestResult):
             self.logger.info('ERROR\n')
         elif self.dots:
             self.logger.info('E')
+        if not hasattr(test, 'test'):
+            if not (issubclass(type(test.test), PBSTestSuite)):
+                raise KeyboardInterrupt
 
     def addError(self, test, err):
         """
@@ -549,11 +553,17 @@ class PTLTestRunner(Plugin):
             method = getattr(test.test, getattr(test.test, '_testMethodName'))
             return getattr(method, TIMEOUT_KEY)
         except:
+            testcase_timeout = MINIMUM_TESTCASE_TIMEOUT
             if hasattr(test, 'test'):
-                __conf = getattr(test.test, 'conf')
+                if not (issubclass(type(test.test), PBSTestSuite)):
+                    testcase_timeout = MINIMUM_TESTCASE_TIMEOUT
+                else:
+                    __conf = getattr(test.test, 'conf')
+                    testcase_timeout = __conf['default_testcase_timeout']
             else:
                 __conf = getattr(test.context, 'conf')
-            return __conf['default_testcase_timeout']
+                test_casetimeout = __conf['default_testcase_timeout']
+            return testcase_timeout
 
     def __set_test_end_data(self, test, err=None):
         if not hasattr(test, 'start_time'):

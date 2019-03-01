@@ -43,6 +43,7 @@ import logging
 import platform
 import traceback
 import time
+import datetime
 import json
 import ptl.utils.pbs_logutils as lu
 from ptl.lib.pbs_testlib import PbsTypeDuration
@@ -1625,6 +1626,9 @@ class JSONDb(DBType):
         if len(data) == 0:
             return
         if 'testdata' in data.keys():
+            if (data['testdata']['start_time'] == 0) and \
+                    (data['testdata']['status'] == 'ERROR'):
+                data['testdata']['start_time'] = datetime.datetime.now()
             self.__write_test_data(data['testdata'])
 
     def close(self, result=None):
