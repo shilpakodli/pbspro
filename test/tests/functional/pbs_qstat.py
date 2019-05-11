@@ -50,7 +50,7 @@ class TestQstat(TestFunctional):
 
         attr = {'resources_available.ncpus': 1}
         self.server.manager(MGR_CMD_SET, NODE, attr, id=self.mom.hostname)
-
+        print "***** demo purpose ******"
         job_count = 10
         j = Job(TEST_USER)
         j.set_sleep_time(5)
