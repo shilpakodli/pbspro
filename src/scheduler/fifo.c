@@ -208,15 +208,19 @@ schedinit(void)
 	Py_Initialize();
 
 	path = PySys_GetObject("path");
-
+    schdlog(PBSEVENT_ADMIN, PBS_EVENTCLASS_FILE, LOG_NOTICE,
+			__func__, PyString_AsString(path));
 	snprintf(buf, sizeof(buf), "%s/python/lib/python2.7", pbs_conf.pbs_exec_path);
 	PyList_Append(path, PyString_FromString(buf));
-
+	schdlog(PBSEVENT_ADMIN, PBS_EVENTCLASS_FILE, LOG_NOTICE,
+			__func__, PyString_AsString(path));
 	snprintf(buf, sizeof(buf), "%s/python/lib/python2.7/lib-dynload", pbs_conf.pbs_exec_path);
 	PyList_Append(path, PyString_FromString(buf));
-
+    schdlog(PBSEVENT_ADMIN, PBS_EVENTCLASS_FILE, LOG_NOTICE,
+			__func__, PyString_AsString(path));
 	PySys_SetObject("path", path);
-
+    schdlog(PBSEVENT_ADMIN, PBS_EVENTCLASS_FILE, LOG_NOTICE,
+			__func__, PyString_AsString(path));
 	PyRun_SimpleString(
 		"_err =\"\"\n"
 		"ex = None\n"
