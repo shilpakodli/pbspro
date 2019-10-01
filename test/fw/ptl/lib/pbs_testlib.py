@@ -5125,7 +5125,9 @@ class Server(PBSService):
         if revertresources:
             try:
                 rescs = self.status(RSC)
+                self.logger.info("======= revert_to_defaults %s =====" % rescs)
                 rescs = [r['id'] for r in rescs]
+                self.logger.info("======= after fetching id rescs %s ====" % rescs)
             except BaseException:
                 rescs = []
             if len(rescs) > 0:
@@ -6697,6 +6699,7 @@ class Server(PBSService):
                 rc = 0
             if rc == 0:
                 if cmd == MGR_CMD_LIST:
+                    self.logger.info("====== list resources %s =====" % ret)
                     bsl = self.utils.convert_to_dictlist(ret['out'], attrib,
                                                          mergelines=True)
                     self.update_attributes(obj_type, bsl)
