@@ -241,7 +241,7 @@ class PBSLogUtils(object):
             return None
 
         stdoffset = timedelta(seconds=-time.timezone)
-        if time.daylight:
+        if time.localtime().tm_isdst:
             dstoffset = timedelta(seconds=-time.altzone)
         else:
             dstoffset = stdoffset
