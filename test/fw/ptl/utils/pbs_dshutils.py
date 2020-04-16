@@ -865,6 +865,16 @@ class DshUtils(object):
                 self._tempdir[hostname] = '/tmp'
         return self._tempdir[hostname]
 
+    def run_check_lockfile(self):
+        host = socket.gethostname()
+        server_lock = "/var/spool/pbs/server_priv/server.lock"
+        self.logger.info("======= ls server_priv ====") 
+        cmd = "ls /var/spool/pbs/server_priv"
+        ret = self.run_cmd(host, cmd, sudo=True)
+        self.logger.info("===== cat server lock file content ===")
+        _cmd = "cat " + server_lock
+        ret = self.run_cmd(host, _cmd, sudo=True)
+
     def run_cmd(self, hosts=None, cmd=None, sudo=False, stdin=None,
                 stdout=PIPE, stderr=PIPE, input=None, cwd=None, env=None,
                 runas=None, logerr=True, as_script=False, wait_on_script=True,

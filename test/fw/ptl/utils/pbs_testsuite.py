@@ -505,10 +505,15 @@ class PBSTestSuite(unittest.TestCase):
         # once save & load configurations are implemented for
         # comm
         if not self.use_cur_setup:
+            self.logger.info("*********Revert servers*************") 
             self.revert_servers()
+            self.logger.info("*********Revert pbs conf*************") 
             self.revert_pbsconf()
+            self.logger.info("*********Revert scheduler*************") 
             self.revert_schedulers()
+            self.logger.info("*********Revert mom*************") 
             self.revert_moms()
+        self.logger.info("*********Revert comm*************") 
         self.revert_comms()
         self.log_end_setup()
         self.measurements = []
@@ -1163,6 +1168,7 @@ class PBSTestSuite(unittest.TestCase):
             for key in keys_to_delete:
                 del(new_pbsconf[key])
 
+            self.du.run_check_lockfile()
             # Set all start bits
             if (new_pbsconf["PBS_START_SERVER"] != "1"):
                 new_pbsconf["PBS_START_SERVER"] = "1"
@@ -1226,11 +1232,13 @@ class PBSTestSuite(unittest.TestCase):
             if len(pbs_conf_val) != len(new_pbsconf):
                 restart_pbs = True
             # Check if existing pbs.conf has correct ownership
+            self.du.run_check_lockfile()
             dest = self.du.get_pbs_conf_file(server.hostname)
             (cf_uid, cf_gid) = (os.stat(dest).st_uid, os.stat(dest).st_gid)
             if cf_uid != 0 or cf_gid > 10:
                 restart_pbs = True
 
+            self.du.run_check_lockfile()
             if restart_pbs or dmns_to_restart > 0:
                 # Write out the new pbs.conf file
                 self.du.set_pbs_config(server.hostname, confs=new_pbsconf,
@@ -1239,7 +1247,9 @@ class PBSTestSuite(unittest.TestCase):
 
                 if restart_pbs:
                     # Restart all
+                    self.du.run_check_lockfile()
                     server.pi.restart(server.hostname)
+                    self.du.run_check_lockfile()
                     self._check_daemons_on_server(server, "server")
                     if new_pbsconf["PBS_START_MOM"] == "1":
                         self._check_daemons_on_server(server, "mom")
@@ -1249,8 +1259,10 @@ class PBSTestSuite(unittest.TestCase):
                 else:
                     for initcmd in cmds_to_exec:
                         # start/stop the particular daemon
+                        self.du.run_check_lockfile()
                         server.pi.initd(server.hostname, initcmd[1],
                                         daemon=initcmd[0])
+                        self.du.run_check_lockfile()
                         if initcmd[1] == "start":
                             if initcmd[0] == "server":
                                 self._check_daemons_on_server(server, "server")
@@ -1289,6 +1301,7 @@ class PBSTestSuite(unittest.TestCase):
         """
         primary_server = self.server
 
+        self.du.run_check_lockfile()
         vals_to_set = {
             "PBS_HOME": None,
             "PBS_EXEC": None,
@@ -1307,11 +1320,16 @@ class PBSTestSuite(unittest.TestCase):
         if primary_server.platform == 'shasta':
             server_vals_to_set["PBS_PUBLIC_HOST_NAME"] = None
 
+        self.du.run_check_lockfile()
         self._revert_pbsconf_server(server_vals_to_set)
 
+        self.du.run_check_lockfile()
         self._revert_pbsconf_mom(primary_server, vals_to_set)
 
+        self.du.run_check_lockfile()
         self._revert_pbsconf_comm(primary_server, vals_to_set)
+
+        self.du.run_check_lockfile()
 
     def revert_servers(self, force=False):
         """
@@ -1390,6 +1408,7 @@ class PBSTestSuite(unittest.TestCase):
             self.assertTrue(server.isUp(), msg)
         server_stat = server.status(SERVER)[0]
         self.add_mgrs_opers()
+        self.du.run_check_lockfile()
         if ((self.revert_to_defaults and self.server_revert_to_defaults) or
                 force):
             server.revert_to_defaults(reverthooks=self.revert_hooks,
@@ -1399,6 +1418,7 @@ class PBSTestSuite(unittest.TestCase):
                                       delscheds=self.del_scheds,
                                       revertresources=self.revert_resources,
                                       server_stat=server_stat)
+        self.du.run_check_lockfile()
         rv = self.is_server_licensed(server)
         _msg = 'No license found on server %s' % (server.shortname)
         self.assertTrue(rv, _msg)
@@ -1408,17 +1428,20 @@ class PBSTestSuite(unittest.TestCase):
         """
         Revert the values set for comm
         """
+        self.du.run_check_lockfile()
         rv = comm.isUp()
         if not rv:
             self.logger.error('comm ' + comm.hostname + ' is down')
             comm.start()
             msg = 'Failed to restart comm ' + comm.hostname
             self.assertTrue(comm.isUp(), msg)
+        self.du.run_check_lockfile()
 
     def revert_scheduler(self, scheduler, force=False):
         """
         Revert the values set for scheduler
         """
+        self.du.run_check_lockfile()
         rv = scheduler.isUp()
         if not rv:
             self.logger.error('scheduler ' + scheduler.hostname + ' is down')
@@ -1430,6 +1453,7 @@ class PBSTestSuite(unittest.TestCase):
             rv = scheduler.revert_to_defaults()
             _msg = 'Failed to revert sched %s' % (scheduler.hostname)
             self.assertTrue(rv, _msg)
+        self.du.run_check_lockfile()
 
     def revert_mom(self, mom, force=False):
         """
@@ -1439,6 +1463,7 @@ class PBSTestSuite(unittest.TestCase):
         :param force: Option to reverse forcibly
         :type force: bool
         """
+        self.du.run_check_lockfile()
         rv = mom.isUp()
         if not rv:
             self.logger.error('mom ' + mom.hostname + ' is down')
@@ -1460,6 +1485,7 @@ class PBSTestSuite(unittest.TestCase):
             if 'clienthost' in self.conf:
                 conf.update({'$clienthost': self.conf['clienthost']})
             mom.apply_config(conf=conf, hup=False, restart=False)
+        self.du.run_check_lockfile()
         if restart:
             mom.restart()
         else:
@@ -1469,6 +1495,7 @@ class PBSTestSuite(unittest.TestCase):
         self.server.manager(MGR_CMD_CREATE, NODE, None, mom.shortname)
         a = {'state': 'free'}
         self.server.expect(NODE, a, id=mom.shortname, interval=1)
+        self.du.run_check_lockfile()
         return mom
 
     def analyze_logs(self):
