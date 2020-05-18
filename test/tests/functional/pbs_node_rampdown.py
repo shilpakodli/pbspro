@@ -163,11 +163,6 @@ class TestPbsNodeRampDown(TestFunctional):
             if lic_count.find('Avail_Global:10000000 ' +
                               'Avail_Local:10000000 Used:0') != -1:
                 return
-            license_type = self.server.status(SERVER, 'pbs_license_info')
-            license_info = license_type[0]['pbs_license_info']
-            node_license = self.du.isfile(path=license_info)
-            if node_license:
-                return
             for lic in lic_count.split():
                 lic_split = lic.split(':')
                 if lic_split[0] == 'Used':
@@ -197,36 +192,36 @@ class TestPbsNodeRampDown(TestFunctional):
         """
         self.server.accounting_match(
             msg=".*%s;%s.*exec_host=%s.*" % (atype, jid, exec_host),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
             msg=".*%s;%s.*exec_vnode=%s.*" % (atype, jid, exec_vnode),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
-            msg=".*%s;%s.*Resource_List\.mem=%s.*" % (atype, jid,  mem),
-            regexp=True, n=20)
+            msg=".*%s;%s.*Resource_List\.mem=%s.*" % (atype, jid, mem),
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
             msg=".*%s;%s.*Resource_List\.ncpus=%d.*" % (atype, jid, ncpus),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
             msg=".*%s;%s.*Resource_List\.nodect=%d.*" % (atype, jid, nodect),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
             msg=".*%s;%s.*Resource_List\.place=%s.*" % (atype, jid, place),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         self.server.accounting_match(
             msg=".*%s;%s.*Resource_List\.select=%s.*" % (atype, jid, select),
-            regexp=True, n=20)
+            regexp=True, n="ALL")
 
         if atype != 'c':
             self.server.accounting_match(
                 msg=".*%s;%s.*resources_used\..*" % (atype, jid),
-                regexp=True, n=20)
+                regexp=True, n="ALL")
 
     def match_vnode_status(self, vnode_list, state, jobs=None, ncpus=None,
                            mem=None):
@@ -610,7 +605,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
         TestFunctional.tearDown(self)
         # Delete managers and operators if added
         attrib = ['operators', 'managers']
-        self.server.manager(MGR_CMD_UNSET, SERVER, attrib)
+        self.server.manager(MGR_CMD_UNSET, SERVER, attrib, sudo=True)
 
     def test_release_nodes_on_stageout_true(self):
         """
@@ -640,9 +635,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -682,7 +675,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                             max_attempts=18, interval=2)
 
         # Verify remaining job resources.
-
         self.server.expect(JOB, {'job_state': 'E',
                                  'Resource_List.mem': '2gb',
                                  'Resource_List.ncpus': 3,
@@ -694,7 +686,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status
@@ -748,8 +739,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -790,8 +780,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -808,12 +797,12 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_release_nodes_on_stageout_default(self):
         """
@@ -835,8 +824,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -874,8 +862,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -893,12 +880,12 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_release_nodes_on_stageout_true_qalter(self):
         """
@@ -924,8 +911,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # run qalter -Wrelease_nodes_on_stageout=true
         self.server.alterjob(jid,
@@ -976,7 +962,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status
@@ -1025,8 +1010,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # run qalter -Wrelease_nodes_on_stageout=true
         self.server.alterjob(jid,
@@ -1071,8 +1055,7 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1089,12 +1072,12 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_hook_release_nodes_on_stageout_true(self):
         """
@@ -1134,8 +1117,7 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1188,7 +1170,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status
@@ -1251,8 +1232,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1293,8 +1273,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1311,12 +1290,12 @@ pbs.event().job.release_nodes_on_stageout=False
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_hook2_release_nodes_on_stageout_true(self):
         """
@@ -1352,8 +1331,7 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1413,7 +1391,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -1472,8 +1449,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1521,8 +1497,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
 
@@ -1541,12 +1516,12 @@ pbs.event().job.release_nodes_on_stageout=False
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_release_nodes_error(self):
         """
@@ -1665,8 +1640,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1704,8 +1678,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1722,12 +1695,12 @@ pbs.event().job.release_nodes_on_stageout=False
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_release_not_assigned_nodes(self):
         """
@@ -1759,8 +1732,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1803,8 +1775,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1821,12 +1792,12 @@ pbs.event().job.release_nodes_on_stageout=False
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
     def test_release_cray_nodes(self):
         """
@@ -1857,8 +1828,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1907,8 +1877,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1925,13 +1894,114 @@ pbs.event().job.release_nodes_on_stageout=False
         # Check for no existence of account update ('u') record
         self.server.accounting_match(
             msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
         # Check for no existence of account next ('c') record
         self.server.accounting_match(
             msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
-            regexp=True, n=20, existence=False, max_attempts=5, interval=1)
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
 
+    def test_release_cpuset_nodes(self):
+        """
+        Test:
+             Given: a job that has been submitted with a select spec
+             of 2 super-chunks of ncpus=3 and mem=2gb each,
+             and 1 chunk of ncpus=2 and mem=2gb, along with
+             place spec of "scatter", resulting in an
+
+             exec_vnode=
+                  (<n1>+<n2>+<n3>)+(<n4>+<n5>+<n6>)+(<n7>)
+
+             Executing:
+                  pbs_release_nodes -j <job-id> <n4> <n5> <n6> <n7>
+             where <n7> is a cpuset node,
+        Result:
+             Returns an error message and no nodes get released.
+        """
+        jid = self.create_and_submit_job('job1')
+
+        self.server.expect(JOB, {'job_state': 'R',
+                                 'Resource_List.mem': '6gb',
+                                 'Resource_List.ncpus': 8,
+                                 'Resource_List.nodect': 3,
+                                 'Resource_List.select': self.job1_select,
+                                 'Resource_List.place': self.job1_place,
+                                 'schedselect': self.job1_schedselect,
+                                 'exec_host': self.job1_exec_host,
+                                 'exec_vnode': self.job1_exec_vnode}, id=jid)
+
+        self.license_count_match(3)
+
+        # Check various vnode status.
+        jobs_assn1 = "%s/0" % (jid,)
+        self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
+                                'job-busy', jobs_assn1, 1, '1048576kb')
+
+        jobs_assn1 = "%s/0" % (jid,)
+        self.match_vnode_status([self.n3, self.n6],
+                                'job-busy', jobs_assn1, 1, '0kb')
+
+        jobs_assn2 = "%s/0, %s/1" % (jid, jid)
+        self.match_vnode_status([self.n7], 'job-busy', jobs_assn2,
+                                2, '2097152kb')
+
+        self.match_vnode_status([self.n0, self.n8, self.n9, self.n10], 'free')
+
+        self.assertTrue(
+            self.pbs_nodefile_match_exec_host(jid, self.job1_exec_host))
+
+        # Set hostB to be of cpuset type
+        a = {'resources_available.arch': 'linux_cpuset'}
+        # set natural vnode of hostC
+        self.server.manager(MGR_CMD_SET, NODE, a, id=self.n7)
+
+        # Run pbs_release_nodes
+        cmd = [self.pbs_release_nodes_cmd, '-j', jid, self.n4, self.n5,
+               self.n6, self.n7]
+        ret = self.server.du.run_cmd(self.server.hostname, cmd,
+                                     runas=TEST_USER)
+
+        self.assertNotEqual(ret['rc'], 0)
+        self.assertTrue(ret['err'][0].startswith(
+            "pbs_release_nodes: not currently supported on nodes whose " +
+            "resources are part of a cpuset: %s" % (self.n7,)))
+
+        # Ensure nothing has changed with the job.
+        self.server.expect(JOB, {'job_state': 'R',
+                                 'Resource_List.mem': '6gb',
+                                 'Resource_List.ncpus': 8,
+                                 'Resource_List.nodect': 3,
+                                 'Resource_List.select': self.job1_select,
+                                 'Resource_List.place': self.job1_place,
+                                 'schedselect': self.job1_schedselect,
+                                 'exec_host': self.job1_exec_host,
+                                 'exec_vnode': self.job1_exec_vnode}, id=jid)
+
+        self.license_count_match(3)
+
+        # Check various vnode status.
+        self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
+                                'job-busy', jobs_assn1, 1, '1048576kb')
+
+        self.match_vnode_status([self.n3, self.n6], 'job-busy',
+                                jobs_assn1, 1, '0kb')
+
+        self.match_vnode_status([self.n7], 'job-busy', jobs_assn2,
+                                2, '2097152kb')
+
+        self.match_vnode_status([self.n0, self.n8, self.n9, self.n10], 'free')
+
+        # Check for no existence of account update ('u') record
+        self.server.accounting_match(
+            msg='.*u;' + jid + ".*exec_host=%s.*" % (self.job1_exec_host_esc,),
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
+
+        # Check for no existence of account next ('c') record
+        self.server.accounting_match(
+            msg='.*c;' + jid + ".*exec_host=%s.*" % (self.job1_new_exec_host,),
+            regexp=True, n="ALL", existence=False, max_attempts=5, interval=1)
+
+>>>>>>> Fix accounting log match in TestPbsNodeRampDown
     def test_release_nodes_all(self):
         """
         Test:
@@ -1958,8 +2028,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2011,7 +2080,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -2061,8 +2129,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2114,7 +2181,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -2167,8 +2233,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2217,7 +2282,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -2292,8 +2356,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2356,12 +2419,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n4>, it's coming from a super-chunk where other vnodes <n5> and
-        # <n6> are still assigned to the job. So the parent mom of <n4>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2429,8 +2487,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2496,12 +2553,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n4>, it's coming from a super-chunk where other vnodes <n5> and
-        # <n6> are still assigned to the job. So the parent mom of <n4>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2587,8 +2639,8 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2670,12 +2722,7 @@ pbs.event().job.release_nodes_on_stageout=False
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n4>, it's coming from a super-chunk where other vnodes <n5> and
-        # <n6> are still assigned to the job. So the parent mom of <n4>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -2770,8 +2817,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2841,12 +2887,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n5>, it's coming from a super-chunk where other vnodes <n4> and
-        # <n6> are still assigned to the job. So the parent mom of <n5>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2932,8 +2973,8 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3013,12 +3054,7 @@ pbs.event().job.release_nodes_on_stageout=False
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n5>, it's coming from a super-chunk where other vnodes <n4> and
-        # <n6> are still assigned to the job. So the parent mom of <n5>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3113,8 +3149,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3185,13 +3220,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n6>, it's coming from a super-chunk where other vnodes <n4> and
-        # <n5> are still # assigned to the job. So the parent mom of <n6>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -3279,8 +3308,8 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3361,12 +3390,7 @@ pbs.event().job.release_nodes_on_stageout=False
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n6>, it's coming from a super-chunk where other vnodes <n4> and
-        # <n5> are still assigned to the job. So the parent mom of <n6>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3457,8 +3481,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3545,7 +3568,7 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n4> and <n5> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -3628,8 +3651,8 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3724,7 +3747,7 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n4> and <n5> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3814,8 +3837,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3902,7 +3924,7 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -3989,8 +4011,8 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4087,7 +4109,7 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -4166,8 +4188,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4230,7 +4251,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -4314,8 +4334,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_extra_res_exec_vnode},
                            id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4406,7 +4425,6 @@ pbs.event().job.release_nodes_on_stageout=False
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -4505,8 +4523,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4578,8 +4595,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4657,7 +4673,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -4741,8 +4756,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4815,7 +4829,7 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), its license is not taken away as <n4> is assigned
         # to a super chunk, and the parent mom still has not released the
         # job as vnodes <n5> and <n6> are still allocated to the job.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -4903,7 +4917,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
         self.license_count_match(3)
 
         # Check various vnode status.
@@ -4967,8 +4980,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5064,8 +5076,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5134,12 +5145,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        # Though the job is listed with ncpus=4 taking away released vnode
-        # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
-        # only the 2 cpu licenses from chunk containing <n7> are released as
-        # <n5> and <n6> are from a super-chunk, and its parent mom is not
-        # releasing the job yet since vnode <n4> is still assigned to the job.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -5180,8 +5186,7 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -5225,8 +5230,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5343,8 +5347,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5425,7 +5428,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5459,8 +5462,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
 
         a = {'job_state': 'S'}
         self.server.expect(JOB, a, id=jid)
-        # server's license_count used is 0 since job is suspended.
-        self.license_count_match(0)
 
         self.match_vnode_status([self.n0, self.n1, self.n2, self.n3,
                                  self.n4, self.n5, self.n6, self.n7,
@@ -5487,9 +5488,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        # Since job was resumed, the license count goes back to the same
-        # number before job was suspended.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5515,10 +5514,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
 
-        # with mom on hostC resumed from its stopped state, then the
-        # the released node <n7>'s 1 cpu license is finally freed
-        # bringing  the license count value to = 7 (previous value) - 1
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # submit this 1 cpu job that requests specifically vnode <n7>
         jid3 = self.create_and_submit_job('job12')
@@ -5534,8 +5530,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': self.job12_exec_vnode},
                            id=jid3, max_attempts=3)
 
-        # total license = 6 (previous value) + 1 for job 'jid3'
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5618,8 +5613,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5700,7 +5694,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5740,11 +5734,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        # Since job was resumed, the license count goes back to the same
-        # number before job was suspended.
-        self.logger.info("sleep for 10 secs while server relicense job")
-        time.sleep(10)
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5774,10 +5764,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
 
-        # with mom on hostC resumed from its stopped state, then the
-        # the released node <n7>'s 1 cpu license is finally freed
-        # bringing the license count value to = 7 (previous value) - 1
-        self.license_count_match(6)
+        self.license_count_match(3)
 
     def test_release_nodes_excl_server_restart_immed(self):
         """
@@ -5830,8 +5817,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5912,7 +5898,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5998,8 +5984,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11_exec_host,
                                  'exec_vnode': self.job11_exec_vnode}, id=jid)
 
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6083,7 +6068,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6128,11 +6113,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        # Since job was resumed, the license count goes back to the same
-        # number before job was suspended.
-        self.logger.info("sleep for 10 secs while server relicense job")
-        time.sleep(10)
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6162,10 +6143,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
 
-        # with mom on hostC resumed from its stopped state, then the
-        # the released node <n7>'s 1 cpu license is finally freed
-        # bringing  the license count value to = 7 (previous value) - 1
-        self.license_count_match(6)
+        self.license_count_match(3)
 
     def test_release_nodes_shared_server_restart_immed(self):
         """
@@ -6189,8 +6167,8 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'schedselect': self.job11_schedselect,
                                  'exec_host': self.job11_exec_host,
                                  'exec_vnode': self.job11_exec_vnode}, id=jid)
-        # server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(7)
+
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6275,7 +6253,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(7)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6369,6 +6347,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
+        self.server.manager(MGR_CMD_UNSET, SERVER, ["managers", "operators"])
         manager = str(MGR_USER) + '@*'
         self.server.manager(MGR_CMD_SET, SERVER,
                             {'managers': (INCR, manager)},
@@ -6429,21 +6408,24 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         new_exec_vnode_esc = \
             new_exec_vnode.replace("[", "\[").replace("]", "\]").replace(
                 "(", "\(").replace(")", "\)").replace("+", "\+")
-        self.server.expect(JOB, {'job_state': 'R',
-                                 'Resource_List.mem': '3gb',
-                                 'Resource_List.ncpus': 4,
-                                 'Resource_List.select': newsel,
-                                 'Resource_List.place': self.job1_place,
-                                 'Resource_List.nodect': 2,
-                                 'schedselect': newsel,
-                                 'exec_host': new_exec_host,
-                                 'exec_vnode': new_exec_vnode}, id=jid)
+        self.server.expect(JOB,
+                           {'job_state': 'R',
+                            'Resource_List.mem': '3gb',
+                            'Resource_List.ncpus': 4,
+                            'Resource_List.select': newsel,
+                            'Resource_List.place': self.job1_place,
+                            'Resource_List.nodect': 2,
+                            'schedselect': newsel,
+                            'exec_host': new_exec_host,
+                            'exec_vnode': new_exec_vnode},
+                           id=jid,
+                           runas=ROOT_USER)
 
         # Though the job is listed with ncpus=4 taking away released vnode
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(6)
+        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -6479,7 +6461,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         self.assertTrue(
             self.pbs_nodefile_match_exec_host(jid, new_exec_host))
 
-        self.server.delete(jid)
+        self.server.delete(jid, runas=ROOT_USER)
 
         # Check account phased end ('e') record
         self.match_accounting_log('e', jid, new_exec_host_esc,
@@ -6530,8 +6512,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode},
                            id=subjob1)
-        # Server's license_count used value matches job's 'ncpus' value.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (subjob1,)
@@ -6600,12 +6581,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=subjob1)
 
-        # Though the job is listed with ncpus=7 taking away released vnode
-        # <n4>, it's coming from a super-chunk where other vnodes <n5> and
-        # <n6> are still assigned to the job. So the parent mom of <n4>
-        # till won't release the job and thus, the 1 license for it is still
-        # allocated.
-        self.license_count_match(8)
+        self.license_count_match(3)
 
         # BELOW IS CODE IS BLOCEKD ON PP-596
         # Check account update ('u') record
@@ -6846,6 +6822,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                             {'resources_available.ncpus': 3},
                             id=self.hostC)
 
+        self.license_count_match(3)
         # Submit multiple jobs
         jid1 = self.create_and_submit_job('job13')
         jid2 = self.create_and_submit_job('job13')
