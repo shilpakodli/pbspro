@@ -160,6 +160,7 @@ class TestPbsNodeRampDown(TestFunctional):
         for _ in range(n):
             server_stat = self.server.status(SERVER, 'license_count')
             lic_count = server_stat[0]['license_count']
+            self.logger.info("***** License Count **********", lic_count)
             if lic_count.find('Avail_Global:10000000 ' +
                               'Avail_Local:10000000 Used:0') != -1:
                 return
@@ -6821,6 +6822,7 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         self.server.manager(MGR_CMD_SET, NODE,
                             {'resources_available.ncpus': 3},
                             id=self.hostC)
+        time.sleep(10)
 
         self.license_count_match(3)
         # Submit multiple jobs
