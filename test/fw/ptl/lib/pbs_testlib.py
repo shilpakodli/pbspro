@@ -5612,7 +5612,7 @@ class Server(PBSService):
         del self.__dict__
 
     def status(self, obj_type=SERVER, attrib=None, id=None,
-               extend=None, level=logging.INFO, db_access=None, runas=None,
+               extend=None, level=logging.DEBUG2, db_access=None, runas=None,
                resolve_indirectness=False, logerr=True):
         """
         Stat any PBS object ``[queue, server, node, hook, job,
@@ -5813,7 +5813,7 @@ class Server(PBSService):
                 as_script = False
 
             ret = self.du.run_cmd(tgt, pcmd, runas=runas, as_script=as_script,
-                                  level=logging.INFOCLI, logerr=logerr)
+                                  level=logging.DEBUG2, logerr=logerr)
             o = ret['out']
             if ret['err'] != ['']:
                 self.last_error = ret['err']
@@ -8265,7 +8265,7 @@ class Server(PBSService):
 
     def expect(self, obj_type, attrib=None, id=None, op=EQ, attrop=PTL_AND,
                attempt=0, max_attempts=None, interval=None, count=None,
-               extend=None, offset=0, runas=None, level=logging.INFO,
+               extend=None, offset=0, runas=None, level=logging.DEBUG2,
                msg=None, trigger_sched_cycle=True):
         """
         expect an attribute to match a given value as per an

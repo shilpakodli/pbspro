@@ -871,7 +871,7 @@ class DshUtils(object):
     def run_cmd(self, hosts=None, cmd=None, sudo=False, stdin=None,
                 stdout=PIPE, stderr=PIPE, input=None, cwd=None, env=None,
                 runas=None, logerr=True, as_script=False, wait_on_script=True,
-                level=logging.INFOCLI2, port=None):
+                level=logging.DEBUG, port=None):
         """
         Run a command on a host or list of hosts.
 
