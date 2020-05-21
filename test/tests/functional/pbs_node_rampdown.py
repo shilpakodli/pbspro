@@ -151,32 +151,6 @@ class TestPbsNodeRampDown(TestFunctional):
             return False
         return True
 
-    def license_count_match(self, num_licenses):
-        """
-        This will fail on an assert if server's license_count used value
-        does not equal 'num_licenses'
-        """
-        n = retry = 5
-        for _ in range(n):
-            server_stat = self.server.status(SERVER, 'license_count')
-            lic_count = server_stat[0]['license_count']
-            self.logger.info("***** License Count **********", lic_count)
-            if lic_count.find('Avail_Global:10000000 ' +
-                              'Avail_Local:10000000 Used:0') != -1:
-                return
-            for lic in lic_count.split():
-                lic_split = lic.split(':')
-                if lic_split[0] == 'Used':
-                    actual_licenses = int(lic_split[1])
-                    if actual_licenses == num_licenses:
-                        return
-                    break
-            retry -= 1
-            if retry == 0:
-                raise AssertionError("not found %d licenses" % (num_licenses,))
-            self.logger.info("sleeping 3 secs before next retry")
-            time.sleep(3)
-
     def match_accounting_log(self, atype, jid, exec_host, exec_vnode,
                              mem, ncpus, nodect, place, select):
         """
@@ -604,9 +578,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
         self.momB.signal("-CONT")
         self.momC.signal("-CONT")
         TestFunctional.tearDown(self)
-        # Delete managers and operators if added
-        attrib = ['operators', 'managers']
-        self.server.manager(MGR_CMD_UNSET, SERVER, attrib, sudo=True)
 
     def test_release_nodes_on_stageout_true(self):
         """
@@ -636,7 +607,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -686,8 +656,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_new_exec_host,
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status
         self.match_vnode_status([self.n1, self.n2],
@@ -740,8 +708,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -780,8 +746,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -825,8 +789,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -862,8 +824,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -911,8 +871,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # run qalter -Wrelease_nodes_on_stageout=true
         self.server.alterjob(jid,
@@ -963,8 +921,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status
         self.match_vnode_status([self.n1, self.n2],
                                 'job-busy', jobs_assn1, 1, '1048576kb')
@@ -1011,8 +967,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # run qalter -Wrelease_nodes_on_stageout=true
         self.server.alterjob(jid,
                              {ATTR_W: 'release_nodes_on_stageout=false'})
@@ -1055,8 +1009,6 @@ return i\\n return fib(i-1) + fib(i-2)\\n\\nprint(fib(400))\\\")"'
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1118,8 +1070,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1170,8 +1120,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_host': self.job1_new_exec_host,
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status
         self.match_vnode_status([self.n1, self.n2],
@@ -1233,8 +1181,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1273,8 +1219,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1331,8 +1275,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -1392,8 +1334,6 @@ pbs.event().job.release_nodes_on_stageout=True
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
                                 'job-busy', jobs_assn1, 1, '1048576kb')
@@ -1450,8 +1390,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1497,8 +1435,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
 
@@ -1641,8 +1577,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1678,8 +1612,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1733,8 +1665,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1775,8 +1705,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1829,8 +1757,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1877,8 +1803,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1931,8 +1855,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -1977,8 +1899,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2028,8 +1948,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2081,8 +1999,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
                                 'job-busy', jobs_assn1, 1, '1048576kb')
@@ -2129,8 +2045,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -2182,8 +2096,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
                                 'job-busy', jobs_assn1, 1, '1048576kb')
@@ -2234,8 +2146,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2282,8 +2192,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_new_exec_host,
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
@@ -2357,8 +2265,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2419,8 +2325,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2488,8 +2392,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2553,8 +2455,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2641,8 +2541,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2722,8 +2620,6 @@ pbs.event().job.release_nodes_on_stageout=False
                             'schedselect': newsel,
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -2818,8 +2714,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -2887,8 +2781,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -2975,8 +2867,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -3054,8 +2944,6 @@ pbs.event().job.release_nodes_on_stageout=False
                             'schedselect': newsel,
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3150,8 +3038,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -3221,7 +3107,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -3310,8 +3195,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -3390,8 +3273,6 @@ pbs.event().job.release_nodes_on_stageout=False
                             'schedselect': newsel,
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3482,8 +3363,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -3569,7 +3448,6 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n4> and <n5> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -3652,8 +3530,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -3748,7 +3624,6 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n4> and <n5> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -3838,8 +3713,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -3925,7 +3798,6 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -4012,8 +3884,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  self.job1_extra_res_exec_host,
                                  'exec_vnode':
                                  self.job1_extra_res_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4110,7 +3980,6 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
@@ -4189,8 +4058,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -4251,8 +4118,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_new_exec_host,
                                  'exec_vnode': self.job1_new_exec_vnode},
                            id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
@@ -4334,8 +4199,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_extra_res_exec_host,
                                  'exec_vnode': self.job1_extra_res_exec_vnode},
                            id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4425,8 +4288,6 @@ pbs.event().job.release_nodes_on_stageout=False
                             'schedselect': newsel,
                             'exec_host': new_exec_host,
                             'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2],
@@ -4524,8 +4385,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -4595,8 +4454,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -4673,8 +4530,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': newsel,
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
 
@@ -4757,8 +4612,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -4830,7 +4683,6 @@ pbs.event().job.release_nodes_on_stageout=False
         # <n4> (1 cpu), its license is not taken away as <n4> is assigned
         # to a super chunk, and the parent mom still has not released the
         # job as vnodes <n5> and <n6> are still allocated to the job.
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -4918,8 +4770,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2],
@@ -4980,8 +4830,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5077,8 +4925,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -5146,8 +4992,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'exec_host': new_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check account update ('u') record
         self.match_accounting_log('u', jid, exec_host_esc,
                                   exec_vnode_esc, "6gb", 8, 3,
@@ -5186,8 +5030,6 @@ pbs.event().job.release_nodes_on_stageout=False
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -5230,8 +5072,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'schedselect': self.job1_schedselect,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5348,8 +5188,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5, self.n7],
@@ -5429,7 +5267,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5489,8 +5326,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5,
@@ -5515,8 +5350,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
 
-        self.license_count_match(3)
-
         # submit this 1 cpu job that requests specifically vnode <n7>
         jid3 = self.create_and_submit_job('job12')
 
@@ -5530,8 +5363,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job12_exec_host,
                                  'exec_vnode': self.job12_exec_vnode},
                            id=jid3, max_attempts=3)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5614,8 +5445,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5, self.n7],
@@ -5695,7 +5524,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5735,8 +5563,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -5764,8 +5590,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # With momC resumed, it now receives DELETE_JOB2 request from
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
-
-        self.license_count_match(3)
 
     def test_release_nodes_excl_server_restart_immed(self):
         """
@@ -5818,8 +5642,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11x_exec_host,
                                  'exec_vnode': self.job11x_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5, self.n7],
@@ -5899,7 +5721,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -5985,8 +5806,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job11_exec_host,
                                  'exec_vnode': self.job11_exec_vnode}, id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -6069,7 +5888,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6114,8 +5932,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_vnode': new_exec_vnode},
                            id=jid)
 
-        self.license_count_match(3)
-
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
         self.match_vnode_status([self.n1, self.n2, self.n4, self.n5],
@@ -6144,8 +5960,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # MS
         self.momC.log_match("Job;%s;DELETE_JOB2 received" % (jid,), n=20)
 
-        self.license_count_match(3)
-
     def test_release_nodes_shared_server_restart_immed(self):
         """
         Test:
@@ -6168,8 +5982,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'schedselect': self.job11_schedselect,
                                  'exec_host': self.job11_exec_host,
                                  'exec_vnode': self.job11_exec_vnode}, id=jid)
-
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6254,7 +6066,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n4> (1 cpu), <n5> (1 cpu), <n7> (1 cpu),
         # hostB hasn't released job because <n6> is still part of the job and
         # <n7> hasn't been released because the mom is stopped.
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (jid,)
@@ -6426,7 +6237,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         # <n5> (1 cpu), <n6> (1 cpu), <n7> (2 cpus),
         # only <n7> got released.  <n5> and <n6> are part of a super
         # chunk that wasn't fully released.
-        self.license_count_match(3)
 
         # Check account update ('u') record
         self.match_accounting_log('u', jid, self.job1_exec_host_esc,
@@ -6513,7 +6323,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': self.job1_exec_vnode},
                            id=subjob1)
-        self.license_count_match(3)
 
         # Check various vnode status.
         jobs_assn1 = "%s/0" % (subjob1,)
@@ -6581,8 +6390,6 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
                                  'schedselect': newsel,
                                  'exec_host': self.job1_exec_host,
                                  'exec_vnode': new_exec_vnode}, id=subjob1)
-
-        self.license_count_match(3)
 
         # BELOW IS CODE IS BLOCEKD ON PP-596
         # Check account update ('u') record
@@ -6822,9 +6629,10 @@ pbs.logjobmsg(pbs.event().job.id, "epilogue hook executed")
         self.server.manager(MGR_CMD_SET, NODE,
                             {'resources_available.ncpus': 3},
                             id=self.hostC)
+
+        # Wait for nodes to come up
         time.sleep(10)
 
-        self.license_count_match(3)
         # Submit multiple jobs
         jid1 = self.create_and_submit_job('job13')
         jid2 = self.create_and_submit_job('job13')
