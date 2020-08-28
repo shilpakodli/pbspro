@@ -3,40 +3,37 @@
 # Copyright (C) 1994-2020 Altair Engineering, Inc.
 # For more information, contact Altair at www.altair.com.
 #
-# This file is part of both the OpenPBS software ("OpenPBS")
-# and the PBS Professional ("PBS Pro") software.
+# This file is part of the PBS Professional ("PBS Pro") software.
 #
 # Open Source License Information:
 #
-# OpenPBS is free software. You can redistribute it and/or modify it under
-# the terms of the GNU Affero General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
+# PBS Pro is free software. You can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
 #
-# OpenPBS is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
-# License for more details.
+# PBS Pro is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.
+# See the GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Commercial License Information:
 #
-# PBS Pro is commercially licensed software that shares a common core with
-# the OpenPBS software.  For a copy of the commercial license terms and
-# conditions, go to: (http://www.pbspro.com/agreement.html) or contact the
-# Altair Legal Department.
+# For a copy of the commercial license terms and conditions,
+# go to: (http://www.pbspro.com/UserArea/agreement.html)
+# or contact the Altair Legal Department.
 #
-# Altair's dual-license business model allows companies, individuals, and
-# organizations to create proprietary derivative works of OpenPBS and
+# Altair’s dual-license business model allows companies, individuals, and
+# organizations to create proprietary derivative works of PBS Pro and
 # distribute them - whether embedded or bundled with other software -
 # under a commercial license agreement.
 #
-# Use of Altair's trademarks, including but not limited to "PBS™",
-# "OpenPBS®", "PBS Professional®", and "PBS Pro™" and Altair's logos is
-# subject to Altair's trademark licensing policies.
-
+# Use of Altair’s trademarks, including but not limited to "PBS™",
+# "PBS Professional®", and "PBS Pro™" and Altair’s logos is subject to Altair's
+# trademark licensing policies.
 
 from tests.functional import *
 import json
@@ -65,6 +62,7 @@ class Test_power_provisioning_cray(TestFunctional):
         self.nids = []
         self.names = []
         for n in self.server.status(NODE):
+            print("======== node =========", n)
             if 'resources_available.PBScraynid' in n:
                 self.names.append(n['id'])
                 craynid = n['resources_available.PBScraynid']
@@ -75,17 +73,11 @@ class Test_power_provisioning_cray(TestFunctional):
         """
         Modify the hook config file contents
         """
-        conf_file = str(hook_id) + '.CF'
-        conf_file_path = os.path.join(self.server.pbs_conf['PBS_HOME'],
-                                      'server_priv', 'hooks', conf_file)
-        with open(conf_file_path) as data_file:
-            data = json.load(data_file)
+        orig_pcfg = self.server.export_hook_config(hook_id, 'pbs')
+        pcfg = copy.deepcopy(orig_pcfg)
         for key, value in attrs.items():
-            data[key] = value
-        with open(conf_file_path, 'w') as fp:
-            json.dump(data, fp)
-        a = {'enabled': 'True'}
-        self.server.manager(MGR_CMD_SET, PBS_HOOK, a, id=hook_id, sudo=True)
+            pcfg[key] = value
+        self.server.import_hook_config(hook_name=hook_id, hook_conf=pcfg, hook_type='pbs')
 
     def setup_cray_eoe(self):
         """
@@ -99,7 +91,7 @@ class Test_power_provisioning_cray(TestFunctional):
         # Dividing total number of nodes by 3 and setting each part to a
         # different power profile , which will be used to submit jobs with
         # chunks matching to the number of nodes set to each profile
-        self.npp = len(self.names) / 3
+        self.npp = int(len(self.names) / 3)
         for i in range(len(self.names)):
             if i in range(0, self.npp):
                 self.server.manager(MGR_CMD_SET, NODE,
@@ -115,16 +107,23 @@ class Test_power_provisioning_cray(TestFunctional):
                                     self.names[i])
 
         # Find nid range for capmc command
-        cmd = "/opt/cray/capmc/default/bin/capmc "\
-              "get_power_cap_capabilities --nids " + ','.join(self.nids)
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        (o, e) = p.communicate()
-        out = json.loads(o)
+        #cmd = "/opt/cray/capmc/default/bin/capmc "\
+        #      "get_power_cap_capabilities --nids " + '"' + ','.join(self.nids + '"')
+        #p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        capmc_cmd = os.path.join(
+            os.sep, 'opt', 'cray', 'capmc', 'default', 'bin', 'capmc')
+        ret = self.du.run_cmd(self.server.hostname, [
+                        capmc_cmd, 'get_power_cap_capabilities', '--nids',
+                        ','.join(self.nids)], sudo=True)
+        if ret['rc']:
+            self.fail("Failed to get power capabilities of nodes")
+        out = ''.join(ret['out'])
+        out = json.loads(out)
         low = 0
         med = 0
         high = 0
         rv = 'groups' in out
-        msg = "Error while creating hook content from capmc output: " + cmd
+        msg = "Error while creating hook content from capmc output: " + capmc_cmd
         self.assertTrue(rv, msg)
         for group in out['groups']:
             for control in group['controls']:
@@ -199,7 +198,7 @@ e.accept()
         host = n['Mom']
         self.assertTrue(host is not None)
         mom = self.moms[host]
-        mom.log_match(
+        self.mom.log_match(
             "Hook;PBS_power.HK;copy hook-related file request received",
             starttime=self.server.ctime)
 
@@ -911,6 +910,7 @@ e.accept()
             NODE, {'state=sleep': len(self.server.status(NODE)) - nn})
         a = {"node_idle_limit": "1800", 'min_node_down_delay': '30'}
         self.modify_hook_config(attrs=a, hook_id='PBS_power')
+        print("*********** names *******", self.names)
         j1id = self.submit_job(1000, {'Resource_List.vnode': self.names[0]})
         j2id = self.submit_job(1000, {'Resource_List.vnode': self.names[1]})
         j3id = self.submit_job(1000, {'Resource_List.vnode': self.names[2]})
