@@ -1975,7 +1975,7 @@ class DshUtils(object):
                 # copy temp file created  on local host to remote host
                 # as different user
                 self.run_copy(hostname, src=tmpfile, dest=tmpfile,
-                              runas=asuser, preserve_permission=False,
+                              runas=asuser, preserve_permission=True,
                               level=level)
             else:
                 # copy temp file created on localhost to remote as current user
@@ -2050,23 +2050,25 @@ class DshUtils(object):
                               preserve_permission=False, level=level)
             # remove local temp dir
             os.rmdir(tmpdir)
-        if asuser is not None:
-            # by default mkdtemp creates dir with 0600 permission
-            # to create dir as different user first change the dir
-            # permission to 0644 so that other user has read permission
-            self.chmod(path=tmpdir, mode=0o755)
-            # since we need to create as differnt user than current user
-            # create a temp dir just to get temp dir name with absolute path
-            tmpdir2 = tempfile.mkdtemp(suffix, prefix, dirname)
-            os.rmdir(tmpdir2)
-            # copy the orginal temp as new temp dir
-            self.run_copy(hostname, src=tmpdir, dest=tmpdir2, runas=asuser,
-                          recursive=True,
-                          preserve_permission=False, level=level)
-            # remove original temp dir
-            os.rmdir(tmpdir)
-            self.tmpdirlist.append(tmpdir2)
-            return tmpdir2
+        else:
+            if asuser is not None:
+                # by default mkdtemp creates dir with 0600 permission
+                # to create dir as different user first change the dir
+                # permission to 0644 so that other user has read permission
+                self.chmod(path=tmpdir, mode=0o755)
+                # since we need to create as differnt user than current user
+                # create a temp dir just to get temp dir name
+                # with absolute path
+                tmpdir2 = tempfile.mkdtemp(suffix, prefix, dirname)
+                os.rmdir(tmpdir2)
+                # copy the orginal temp as new temp dir
+                self.run_copy(hostname, src=tmpdir, dest=tmpdir2, runas=asuser,
+                              recursive=True,
+                              preserve_permission=False, level=level)
+                # remove original temp dir
+                os.rmdir(tmpdir)
+                self.tmpdirlist.append(tmpdir2)
+                return tmpdir2
         self.tmpdirlist.append(tmpdir)
         return tmpdir
 

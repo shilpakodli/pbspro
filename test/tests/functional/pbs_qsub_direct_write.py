@@ -229,17 +229,21 @@ class TestQsub_direct_write(TestFunctional):
         j.set_sleep_time(10)
         self.server.manager(MGR_CMD_SET, SERVER, {
                             'default_qsub_arguments': '-kdoe'})
-        sub_dir = self.du.create_temp_dir(asuser=TEST_USER)
-        mapping_dir = self.du.create_temp_dir(asuser=TEST_USER)
+        sub_dir = self.du.create_temp_dir(hostname=self.mom.hostname,
+                                          asuser=TEST_USER)
+        mapping_dir = self.du.create_temp_dir(hostname=self.mom.hostname,
+                                              asuser=TEST_USER)
         self.mom.add_config(
-            {'$usecp': self.server.hostname + ':' + sub_dir +
+            {'$usecp': self.mom.hostname + ':' + sub_dir +
              ' ' + mapping_dir})
         self.mom.restart()
-        jid = self.server.submit(j, submit_dir=sub_dir)
+        jid = self.server.submit(j)
         self.logger.info(self.msg)
         self.server.expect(JOB, {'job_state': 'R'}, id=jid)
-        file_count = len([name for name in os.listdir(
-            mapping_dir) if os.path.isfile(os.path.join(mapping_dir, name))])
+        map_dir_list = self.du.listdir(self.mom.hostname, mapping_dir)
+        file_count = len([name for name in map_dir_list
+                          if self.du.isfile(self.mom.hostame,
+                                            os.path.join(mapping_dir, name))])
         self.assertEqual(2, file_count)
         self.server.expect(JOB, {ATTR_k: 'doe'}, id=jid)
 
