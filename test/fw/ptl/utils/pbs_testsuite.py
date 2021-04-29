@@ -1157,6 +1157,8 @@ class PBSTestSuite(unittest.TestCase):
         """
         svr_hostnames = [svr.hostname for svr in self.servers.values()]
         for mom in self.moms.values():
+            self.logger.info('server and mom %s %s', mom.hostname, svr_hostnames)
+            self.logger.info("********")
             if mom.hostname in svr_hostnames:
                 continue
             mom.revert_mom_pbs_conf(primary_server, vals_to_set)
