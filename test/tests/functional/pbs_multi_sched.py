@@ -85,6 +85,14 @@ class TestMultipleSchedulers(TestFunctional):
         self.server.manager(MGR_CMD_SET, SCHED,
                             {'scheduling': 'True'}, id="sc3")
 
+    def delete_sched(self, sched_name, sudo=True):
+        self.scheds[sched_name].terminate()
+        sched_log = self.scheds[sched_name].attributes['sched_log']
+        sched_priv = self.scheds[sched_name].attributes['sched_priv']
+        self.du.rm(path=sched_log, sudo=True, recursive=True, force=True)
+        self.du.rm(path=sched_priv, sudo=True, recursive=True, force=True)
+        self.server.manager(MGR_CMD_DELETE, SCHED, id=sched_name, sudo=sudo)
+
     def setup_queues_nodes(self):
         a = {'queue_type': 'execution',
              'started': 'True',
@@ -1176,7 +1184,7 @@ class TestMultipleSchedulers(TestFunctional):
                             "Error message is not expected")
 
         # delete sc3 sched
-        self.server.manager(MGR_CMD_DELETE, SCHED, id="sc3", sudo=True)
+        self.delete_sched("sc3", True)
 
         try:
             self.server.manager(MGR_CMD_LIST, SCHED, id="sc3")
@@ -1194,7 +1202,7 @@ class TestMultipleSchedulers(TestFunctional):
         self.server.manager(MGR_CMD_LIST, SCHED, id="sc2")
 
         # delete sc1 sched
-        self.server.manager(MGR_CMD_DELETE, SCHED, id="sc1")
+        self.delete_sched("sc1", False)
 
         try:
             self.server.manager(MGR_CMD_LIST, SCHED, id="sc1")
